@@ -1,15 +1,17 @@
-import type { GoogleGenAI } from '@google/genai'
-import { ANALYSIS_RESPONSE_SCHEMA, type RawGeminiAnalysisResponse } from './schema'
-import { SYSTEM_INSTRUCTION, buildAnalysisPrompt, type DocumentInput } from './prompt'
+import type { RawGeminiAnalysisResponse } from './schema'
+import type { DocumentInput } from './prompt'
 import type { ControlRecord } from '@/types/knowledge-base'
 
 export const GEMINI_MODEL = 'gemini-flash-latest'
 
+/** Server route that holds the API key. See server/geminiAnalyze.ts. */
+const ANALYZE_ROUTE = '/api/gemini/analyze'
+
 export class GeminiConfigError extends Error {
-  constructor() {
-    super(
-      'مفتاح Gemini API غير مُعرَّف. أضِف المتغير GEMINI_API_KEY إلى ملف .env في جذر المشروع ثم أعد تشغيل الخادم.',
-    )
+  constructor(
+    message = 'مفتاح Gemini API غير مُعرَّف. أضِف المتغير GEMINI_API_KEY إلى ملف .env في جذر المشروع ثم أعد تشغيل الخادم.',
+  ) {
+    super(message)
     this.name = 'GeminiConfigError'
   }
 }
@@ -21,44 +23,37 @@ export class GeminiResponseError extends Error {
   }
 }
 
-function getApiKey(): string {
-  const key = import.meta.env.GEMINI_API_KEY as string | undefined
-  if (!key) throw new GeminiConfigError()
-  return key
-}
-
-let client: GoogleGenAI | null = null
-async function getClient(): Promise<GoogleGenAI> {
-  if (!client) {
-    const { GoogleGenAI } = await import('@google/genai')
-    client = new GoogleGenAI({ apiKey: getApiKey() })
-  }
-  return client
-}
-
+/**
+ * Posts the controls and extracted document text to the server, which owns the
+ * API key and performs the Gemini call. The browser never sees the key.
+ */
 export async function requestComplianceAnalysis(
   controls: ControlRecord[],
   documents: DocumentInput[],
 ): Promise<RawGeminiAnalysisResponse> {
-  const ai = await getClient()
-  const prompt = buildAnalysisPrompt(controls, documents)
+  let response: Response
+  try {
+    response = await fetch(ANALYZE_ROUTE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ controls, documents }),
+    })
+  } catch {
+    throw new GeminiResponseError('تعذر الاتصال بخادم التحليل. تأكد من تشغيل الخادم ثم حاول مرة أخرى.')
+  }
 
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: prompt,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: 'application/json',
-      responseJsonSchema: ANALYSIS_RESPONSE_SCHEMA,
-      temperature: 0.2,
-    },
-  })
-
-  const text = response.text
-  if (!text) throw new GeminiResponseError('لم يُرجع النموذج أي محتوى.')
+  if (!response.ok) {
+    const message = await response
+      .json()
+      .then((body: { error?: string }) => body?.error)
+      .catch(() => undefined)
+    // 500 from this route means the server has no usable key configured.
+    if (response.status === 500) throw new GeminiConfigError(message)
+    throw new GeminiResponseError(message ?? 'تعذر إكمال التحليل. حاول مرة أخرى.')
+  }
 
   try {
-    return JSON.parse(text) as RawGeminiAnalysisResponse
+    return (await response.json()) as RawGeminiAnalysisResponse
   } catch {
     throw new GeminiResponseError('استجابة الذكاء الاصطناعي ليست بصيغة JSON صالحة.')
   }
