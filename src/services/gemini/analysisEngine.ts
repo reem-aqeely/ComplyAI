@@ -5,7 +5,7 @@ import type { FrameworkId } from '@/types/common'
 import type { AnalysisResult, ControlFinding, EvidenceRef } from '@/types/assessment'
 import { generateId } from '@/utils/id'
 import { GEMINI_MODEL } from './geminiClient'
-import { MOCK_MODE_ENABLED, buildMockAnalysisResult } from '@/data/mockAssessment'
+import { MOCK_ANALYSIS_ENABLED, buildMockAnalysisResult } from '@/data/mockAssessment'
 
 const NO_EVIDENCE_TEXT = 'لم يتم العثور على دليل يدعم هذا الضابط.'
 
@@ -19,7 +19,7 @@ export interface RunAnalysisParams {
 const MOCK_ANALYSIS_DELAY_MS = 1200
 
 export async function runComplianceAnalysis({ frameworkId, documents }: RunAnalysisParams): Promise<AnalysisResult> {
-  if (MOCK_MODE_ENABLED) {
+  if (MOCK_ANALYSIS_ENABLED) {
     await new Promise((resolve) => setTimeout(resolve, MOCK_ANALYSIS_DELAY_MS))
     return { ...buildMockAnalysisResult(), generatedAt: new Date().toISOString() }
   }

@@ -2,24 +2,35 @@ import type { Assessment, ActionPlanItem, AnalysisResult, AuditEntry, ControlFin
 
 /**
  * ============================================================================
- * DEMO / MOCK MODE — single switch
+ * DEMO / MOCK DATA — two independent switches
  * ============================================================================
- * Set to `false` to always use the real Gemini analysis pipeline.
- * Set to `true` to skip the AI call entirely and drive the app from the
- * editable sample data below (see `src/services/gemini/analysisEngine.ts`).
+ * These were previously one flag, which made the two concerns inseparable:
+ * turning off mock analysis to use real Gemini also emptied the app, leaving
+ * the consultant with no assessment to review and no way to obtain one.
  *
- * Everything under this flag is plain data — edit any field below and the
+ * MOCK_ANALYSIS_ENABLED  — `true` skips the Gemini call and returns the sample
+ *                          analysis below. `false` runs the real pipeline.
+ * SEED_DEMO_ASSESSMENTS  — `true` seeds the sample assessments on first run so
+ *                          neither dashboard starts empty. Independent of the
+ *                          analysis switch, and never touches existing data.
+ *
+ * Everything under these flags is plain data — edit any field below and the
  * dashboard, controls table, recommendations, action plan and final report
  * all update automatically, since they read `assessment.analysis` reactively
  * from the same store the real AI flow writes to.
  * ============================================================================
  */
-export const MOCK_MODE_ENABLED = false
+export const MOCK_ANALYSIS_ENABLED = false
+export const SEED_DEMO_ASSESSMENTS = true
 
 const MOCK_ORGANIZATION_NAME = 'شركة التقنية الوطنية'
 const MOCK_CLIENT_NAME = 'م. فيصل الحربي'
 export const MOCK_ASSESSMENT_ID = 'assess_mock_demo_national_tech'
 const MOCK_FILE_NAME = 'سياسة-حوكمة-تقنية-المعلومات-2025.pdf'
+
+const PENDING_ASSESSMENT_ID = 'assess_mock_demo_pending_review'
+const PENDING_ORGANIZATION_NAME = 'أمانة منطقة النموذج'
+const PENDING_CLIENT_NAME = 'م. سارة العتيبي'
 
 const BASE_TIME = new Date('2026-06-01T09:00:00.000Z').getTime()
 const HOUR = 3_600_000
@@ -285,7 +296,7 @@ const MOCK_ACTION_PLAN: ActionPlanItem[] = [
 ]
 
 /** Full analysis result — this is what `runComplianceAnalysis()` returns when
- * `MOCK_MODE_ENABLED` is true, in place of the real Gemini response. */
+ * `MOCK_ANALYSIS_ENABLED` is true, in place of the real Gemini response. */
 export const MOCK_ANALYSIS_RESULT: AnalysisResult = {
   generatedAt: at(24),
   modelVersion: 'mock-demo-data',
@@ -362,7 +373,7 @@ const MOCK_AUDIT_TRAIL: AuditEntry[] = [
 ]
 
 /** Full, ready-to-view demo assessment. Seeded automatically into the store on
- * first run when `MOCK_MODE_ENABLED` is true and no assessments exist yet —
+ * first run when `SEED_DEMO_ASSESSMENTS` is true and no assessments exist yet —
  * see `useAssessmentStore.ts`. */
 export function buildMockAssessment(): Assessment {
   return {
@@ -387,4 +398,53 @@ export function buildMockAssessment(): Assessment {
  * so repeated "تحليل" runs never share object references with the store. */
 export function buildMockAnalysisResult(): AnalysisResult {
   return structuredClone(MOCK_ANALYSIS_RESULT)
+}
+
+/**
+ * Second demo assessment, sitting in `submitted_to_consultant` — i.e. actually
+ * awaiting review. The finalized assessment above is a finished record with no
+ * remaining actions, so without this one the consultant queue has nothing to
+ * work on. Consultant decisions are stripped from the findings and the audit
+ * trail is cut at the client's submission, so the review starts clean.
+ */
+export function buildPendingReviewAssessment(): Assessment {
+  const analysis = buildMockAnalysisResult()
+  return {
+    id: PENDING_ASSESSMENT_ID,
+    frameworkId: 'DGA',
+    domainId: 'it-governance',
+    clientName: PENDING_CLIENT_NAME,
+    organizationName: PENDING_ORGANIZATION_NAME,
+    createdAt: at(36),
+    updatedAt: at(39),
+    status: 'submitted_to_consultant',
+    files: [{ ...MOCK_FILE_RECORD, id: 'mock_file_pending', uploadedAt: at(36) }],
+    analysis: {
+      ...analysis,
+      generatedAt: at(38),
+      controlFindings: analysis.controlFindings.map(({ consultantDecision: _ignored, ...finding }) => finding),
+    },
+    auditTrail: [
+      {
+        id: 'mock_pending_audit_1',
+        timestamp: at(36),
+        actor: 'client',
+        actorLabel: 'العميل',
+        decision: 'إنشاء تقييم جديد',
+        notes: `تم إنشاء تقييم جديد لجهة: ${PENDING_ORGANIZATION_NAME}`,
+      },
+      { id: 'mock_pending_audit_2', timestamp: at(37), actor: 'client', actorLabel: 'العميل', decision: 'بدء تحليل الامتثال' },
+      {
+        id: 'mock_pending_audit_3',
+        timestamp: at(38),
+        actor: 'client',
+        actorLabel: 'العميل',
+        decision: 'اكتمال تحليل الذكاء الاصطناعي',
+        notes: `نسبة الامتثال المقدَّرة: ${analysis.complianceScore}٪`,
+      },
+      { id: 'mock_pending_audit_4', timestamp: at(39), actor: 'client', actorLabel: 'العميل', decision: 'إرسال للمستشار' },
+    ],
+    submittedAt: at(39),
+    reportVersion: 0,
+  }
 }

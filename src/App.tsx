@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { router } from '@/router'
-import { seedMockAssessmentIfEmpty } from '@/hooks/useAssessmentStore'
+import { seedDemoAssessmentsIfEmpty } from '@/hooks/useAssessmentStore'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    seedMockAssessmentIfEmpty()
+    seedDemoAssessmentsIfEmpty()
   }, [])
 
   return (

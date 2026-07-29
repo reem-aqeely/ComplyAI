@@ -12,7 +12,7 @@ import type { ComplianceStatus, Role } from '@/types/common'
 import { STORAGE_KEYS } from '@/services/storage/storageKeys'
 import { generateId } from '@/utils/id'
 import { CONSULTANT_ACTION_LABEL } from '@/utils/status'
-import { MOCK_MODE_ENABLED, buildMockAssessment } from '@/data/mockAssessment'
+import { SEED_DEMO_ASSESSMENTS, buildMockAssessment, buildPendingReviewAssessment } from '@/data/mockAssessment'
 
 const ACTOR_LABEL: Record<Role, string> = {
   client: 'العميل',
@@ -242,14 +242,15 @@ export const useAssessmentStore = create<AssessmentState>()(
 )
 
 /** Demo convenience only: called once from the app root (see App.tsx). If
- * mock mode is on and nothing has ever been persisted, seeds the one sample
- * assessment so the app isn't empty. Never touches existing/real data. */
-export function seedMockAssessmentIfEmpty() {
-  if (!MOCK_MODE_ENABLED) return
+ * seeding is on and nothing has ever been persisted, seeds the sample
+ * assessments so neither dashboard starts empty — one finalized record and one
+ * awaiting consultant review. Never touches existing/real data. */
+export function seedDemoAssessmentsIfEmpty() {
+  if (!SEED_DEMO_ASSESSMENTS) return
   if (useAssessmentStore.getState().assessments.length > 0) return
-  const mockAssessment = buildMockAssessment()
+  const pending = buildPendingReviewAssessment()
   useAssessmentStore.setState({
-    assessments: [mockAssessment],
-    currentAssessmentId: mockAssessment.id,
+    assessments: [buildMockAssessment(), pending],
+    currentAssessmentId: pending.id,
   })
 }
