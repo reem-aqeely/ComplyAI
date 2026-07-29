@@ -24,12 +24,12 @@ export async function runComplianceAnalysis({ frameworkId, documents }: RunAnaly
     return { ...buildMockAnalysisResult(), generatedAt: new Date().toISOString() }
   }
 
-  // The main controls are the assessed universe: every one of them must end up
-  // with a finding so the score denominator is the DGA framework itself, not
-  // whatever subset the model happened to return. Sub-controls are sent too so
-  // the prompt can nest them under their parent (they are not scored separately).
-  const controls = knowledgeBaseService.getMainControls(frameworkId)
-  const raw = await requestComplianceAnalysis(knowledgeBaseService.getControls(frameworkId), documents)
+  // The assessed universe is the COMPLETE framework — all main controls and all
+  // sub-controls (meta.total_controls in the knowledge base). Every one of them
+  // must end up with a finding, so the score denominator is the DGA framework
+  // itself rather than whatever subset the model happened to return.
+  const controls = knowledgeBaseService.getControls(frameworkId)
+  const raw = await requestComplianceAnalysis(controls, documents)
 
   const findingByControlId = new Map(
     raw.controlFindings.map((f) => [f.controlId, f] as const),
