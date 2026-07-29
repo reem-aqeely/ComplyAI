@@ -1,11 +1,9 @@
-import type { RawGeminiAnalysisResponse } from './schema'
-import type { DocumentInput } from './prompt'
+import type { GoogleGenAI } from '@google/genai'
+import { ANALYSIS_RESPONSE_SCHEMA, type RawGeminiAnalysisResponse } from './schema'
+import { SYSTEM_INSTRUCTION, buildAnalysisPrompt, type DocumentInput } from './prompt'
 import type { ControlRecord } from '@/types/knowledge-base'
 
 export const GEMINI_MODEL = 'gemini-flash-latest'
-
-/** Server route that holds the API key. See server/geminiAnalyze.ts. */
-const ANALYZE_ROUTE = '/api/gemini/analyze'
 
 export class GeminiConfigError extends Error {
   constructor(
@@ -24,37 +22,83 @@ export class GeminiResponseError extends Error {
 }
 
 /**
- * Posts the controls and extracted document text to the server, which owns the
- * API key and performs the Gemini call. The browser never sees the key.
+ * dotenv strips quotes only when they are balanced, so a key pasted as
+ * `GEMINI_API_KEY=AIza..."` keeps the stray quote and Gemini rejects it with a
+ * 400 API_KEY_INVALID. Trim whitespace and unpaired quotes defensively.
  */
+export function normalizeApiKey(raw: string | undefined): string {
+  return (raw ?? '').trim().replace(/^["']+/, '').replace(/["']+$/, '').trim()
+}
+
+function getApiKey(): string {
+  const key = normalizeApiKey(import.meta.env.GEMINI_API_KEY)
+  if (!key) throw new GeminiConfigError()
+  if (!/^AIza[A-Za-z0-9_-]{35}$/.test(key)) {
+    throw new GeminiConfigError(
+      'قيمة GEMINI_API_KEY غير صالحة الشكل. تأكد من عدم وجود علامات اقتباس أو مسافات زائدة حول المفتاح في ملف .env ثم أعد تشغيل الخادم.',
+    )
+  }
+  return key
+}
+
+let client: GoogleGenAI | null = null
+async function getClient(): Promise<GoogleGenAI> {
+  if (!client) {
+    const { GoogleGenAI } = await import('@google/genai')
+    client = new GoogleGenAI({ apiKey: getApiKey() })
+  }
+  return client
+}
+
+/** Pulls the most specific message out of whatever the SDK threw, so the UI
+ * shows the real cause (quota, invalid key, safety block…) instead of a
+ * generic retry prompt. */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+  // The SDK embeds the upstream JSON error in the message; surface its text.
+  const match = error.message.match(/"message"\s*:\s*"([^"]+)"/)
+  return match?.[1] ?? error.message
+}
+
 export async function requestComplianceAnalysis(
   controls: ControlRecord[],
   documents: DocumentInput[],
 ): Promise<RawGeminiAnalysisResponse> {
-  let response: Response
+  const ai = await getClient()
+  const prompt = buildAnalysisPrompt(controls, documents)
+
+  let response: Awaited<ReturnType<GoogleGenAI['models']['generateContent']>>
   try {
-    response = await fetch(ANALYZE_ROUTE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ controls, documents }),
+    response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: 'application/json',
+        responseJsonSchema: ANALYSIS_RESPONSE_SCHEMA,
+        temperature: 0.2,
+      },
     })
-  } catch {
-    throw new GeminiResponseError('تعذر الاتصال بخادم التحليل. تأكد من تشغيل الخادم ثم حاول مرة أخرى.')
+  } catch (error) {
+    // Never swallow the upstream failure — the full object goes to the console
+    // and its real message goes to the UI.
+    console.error('[gemini] generateContent failed:', error)
+    throw new GeminiResponseError(`تعذر إكمال التحليل: ${describeError(error)}`)
   }
 
-  if (!response.ok) {
-    const message = await response
-      .json()
-      .then((body: { error?: string }) => body?.error)
-      .catch(() => undefined)
-    // 500 from this route means the server has no usable key configured.
-    if (response.status === 500) throw new GeminiConfigError(message)
-    throw new GeminiResponseError(message ?? 'تعذر إكمال التحليل. حاول مرة أخرى.')
+  const text = response.text
+  if (!text) {
+    const finishReason = response.candidates?.[0]?.finishReason
+    console.error('[gemini] empty response. finishReason:', finishReason, response)
+    throw new GeminiResponseError(
+      `لم يُرجع النموذج أي محتوى${finishReason ? ` (السبب: ${finishReason})` : ''}.`,
+    )
   }
 
   try {
-    return (await response.json()) as RawGeminiAnalysisResponse
-  } catch {
+    return JSON.parse(text) as RawGeminiAnalysisResponse
+  } catch (error) {
+    console.error('[gemini] response was not valid JSON:', error, '\nraw text:', text)
     throw new GeminiResponseError('استجابة الذكاء الاصطناعي ليست بصيغة JSON صالحة.')
   }
 }
