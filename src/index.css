@@ -1,0 +1,139 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Tajawal', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-display: 'IBM Plex Sans Arabic', 'Tajawal', system-ui, sans-serif;
+
+  /* Brand palette — premium consulting identity */
+  --color-brand-navy: #1b2a4a;
+  --color-brand-navy-50: #eef1f6;
+  --color-brand-navy-100: #d6dce9;
+  --color-brand-navy-200: #adb9d3;
+  --color-brand-navy-300: #8496bd;
+  --color-brand-navy-400: #4f5f8f;
+  --color-brand-navy-500: #1b2a4a;
+  --color-brand-navy-600: #16233c;
+  --color-brand-navy-700: #121c30;
+  --color-brand-navy-800: #0d1524;
+  --color-brand-navy-900: #090e18;
+
+  --color-brand-gold: #c9a24b;
+  --color-brand-gold-50: #faf5e9;
+  --color-brand-gold-100: #f2e4c2;
+  --color-brand-gold-200: #e6cd8f;
+  --color-brand-gold-300: #dab65c;
+  --color-brand-gold-400: #c9a24b;
+  --color-brand-gold-500: #b28a37;
+  --color-brand-gold-600: #8e6e2c;
+  --color-brand-gold-700: #6a5221;
+  --color-brand-gold-800: #473717;
+  --color-brand-gold-900: #231b0b;
+
+  --color-brand-bg: #f6f3ec;
+  --color-brand-ink: #232323;
+
+  /* Status semantics */
+  --color-status-success: #2f7a4f;
+  --color-status-success-bg: #e7f2eb;
+  --color-status-warning: #b5842a;
+  --color-status-warning-bg: #faf1de;
+  --color-status-danger: #a53d3d;
+  --color-status-danger-bg: #f5e7e7;
+  --color-status-critical: #7a1f1f;
+  --color-status-critical-bg: #f0dcdc;
+  --color-status-info: #2c5a8a;
+  --color-status-info-bg: #e6eef5;
+
+  /* shadcn-style semantic tokens mapped to brand */
+  --color-background: var(--color-brand-bg);
+  --color-foreground: var(--color-brand-ink);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-brand-ink);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-brand-ink);
+  --color-primary: var(--color-brand-navy);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-brand-gold);
+  --color-secondary-foreground: var(--color-brand-navy-900);
+  --color-muted: #ece7db;
+  --color-muted-foreground: #6b6558;
+  --color-accent: var(--color-brand-gold-100);
+  --color-accent-foreground: var(--color-brand-navy);
+  --color-destructive: var(--color-status-danger);
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2dccb;
+  --color-input: #e2dccb;
+  --color-ring: var(--color-brand-gold);
+
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+
+  --shadow-soft: 0 1px 2px rgba(27, 42, 74, 0.04), 0 8px 24px -8px rgba(27, 42, 74, 0.12);
+  --shadow-soft-lg: 0 4px 8px rgba(27, 42, 74, 0.04), 0 16px 40px -12px rgba(27, 42, 74, 0.16);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-gold-200);
+    color: var(--color-brand-navy-900);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-brand-navy-200);
+    border-radius: 999px;
+    border: 2px solid var(--color-brand-bg);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .card-elevated {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
