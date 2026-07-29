@@ -14,7 +14,7 @@ import type { Assessment, ActionPlanItem, AnalysisResult, AuditEntry, ControlFin
  * from the same store the real AI flow writes to.
  * ============================================================================
  */
-export const MOCK_MODE_ENABLED = true
+export const MOCK_MODE_ENABLED = false
 
 const MOCK_ORGANIZATION_NAME = 'شركة التقنية الوطنية'
 const MOCK_CLIENT_NAME = 'م. فيصل الحربي'

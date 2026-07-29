@@ -19,7 +19,7 @@ import { AuditTrailTable } from '@/features/audit/AuditTrailTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ASSESSMENT_STATUS_BADGE, ASSESSMENT_STATUS_LABEL } from '@/utils/status'
+import { ASSESSMENT_STATUS_BADGE, ASSESSMENT_STATUS_LABEL, isConsultantReviewable } from '@/utils/status'
 import type { ControlFinding } from '@/types/assessment'
 
 export function AssessmentWorkspacePage() {
@@ -47,7 +47,7 @@ export function AssessmentWorkspacePage() {
     )
   }
 
-  const canReviewControls = role === 'consultant' && ['submitted_to_consultant', 'under_review', 'needs_info'].includes(assessment.status)
+  const canReviewControls = role === 'consultant' && isConsultantReviewable(assessment.status)
   const canSubmit = role === 'client' && assessment.status === 'analyzed'
   const canRevise = assessment.status === 'needs_info' || assessment.status === 'rejected'
 
@@ -104,9 +104,7 @@ export function AssessmentWorkspacePage() {
         />
       )}
 
-      {role === 'consultant' && assessment.status !== 'draft' && assessment.status !== 'analyzing' && (
-        <ConsultantActionsBar assessment={assessment} />
-      )}
+      {role === 'consultant' && <ConsultantActionsBar assessment={assessment} />}
 
       <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList className="flex-wrap">

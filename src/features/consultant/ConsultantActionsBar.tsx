@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useAssessmentStore } from '@/hooks/useAssessmentStore'
+import { isConsultantReviewable } from '@/utils/status'
 import type { Assessment } from '@/types/assessment'
 
 type DialogAction = 'request_info' | 'escalate' | 'approve' | 'reject' | null
@@ -41,9 +42,8 @@ export function ConsultantActionsBar({ assessment }: { assessment: Assessment })
   const [dialogAction, setDialogAction] = useState<DialogAction>(null)
   const [notes, setNotes] = useState('')
 
-  const canReview = ['submitted_to_consultant', 'under_review', 'needs_info'].includes(assessment.status)
+  const canReview = isConsultantReviewable(assessment.status)
   const canFinalize = assessment.status === 'approved'
-  const isFinalized = assessment.status === 'finalized'
 
   function confirm() {
     if (!dialogAction) return
@@ -55,7 +55,9 @@ export function ConsultantActionsBar({ assessment }: { assessment: Assessment })
     setNotes('')
   }
 
-  if (isFinalized) return null
+  // Nothing actionable in this status (draft, analyzing, analyzed, finalized) —
+  // render nothing rather than an empty toolbar with a heading and no buttons.
+  if (!canReview && !canFinalize) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4">

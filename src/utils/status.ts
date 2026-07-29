@@ -54,6 +54,22 @@ export const ASSESSMENT_STATUS_BADGE: Record<AssessmentStatus, NonNullable<Badge
   finalized: 'gold',
 }
 
+/** Statuses in which a consultant may still act on an assessment and its
+ * individual controls. `escalated` and `rejected` are included deliberately:
+ * neither the client nor the consultant has any other way to move an escalated
+ * assessment forward, so leaving them out strands it permanently. */
+const CONSULTANT_REVIEWABLE_STATUSES: AssessmentStatus[] = [
+  'submitted_to_consultant',
+  'under_review',
+  'needs_info',
+  'escalated',
+  'rejected',
+]
+
+export function isConsultantReviewable(status: AssessmentStatus): boolean {
+  return CONSULTANT_REVIEWABLE_STATUSES.includes(status)
+}
+
 export const CONSULTANT_ACTION_LABEL: Record<ConsultantAction, string> = {
   approve: 'اعتماد',
   modify: 'تعديل',

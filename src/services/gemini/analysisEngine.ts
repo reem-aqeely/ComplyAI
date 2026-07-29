@@ -24,38 +24,49 @@ export async function runComplianceAnalysis({ frameworkId, documents }: RunAnaly
     return { ...buildMockAnalysisResult(), generatedAt: new Date().toISOString() }
   }
 
+  // The main controls are the assessed universe: every one of them must end up
+  // with a finding so the score denominator is the DGA framework itself, not
+  // whatever subset the model happened to return. Sub-controls are sent too so
+  // the prompt can nest them under their parent (they are not scored separately).
   const controls = knowledgeBaseService.getMainControls(frameworkId)
-  const raw = await requestComplianceAnalysis(controls, documents)
+  const raw = await requestComplianceAnalysis(knowledgeBaseService.getControls(frameworkId), documents)
 
-  const controlFindings: ControlFinding[] = raw.controlFindings.map((f) => {
-    const control = knowledgeBaseService.getControlById(frameworkId, f.controlId)
-    const hasEvidence = f.evidence && f.evidence.trim() !== '' && !f.evidence.includes(NO_EVIDENCE_TEXT)
+  const findingByControlId = new Map(
+    raw.controlFindings.map((f) => [f.controlId, f] as const),
+  )
+
+  const controlFindings: ControlFinding[] = controls.map((control) => {
+    const f = findingByControlId.get(control.controlId)
+    const hasEvidence =
+      Boolean(f?.evidence) && f!.evidence.trim() !== '' && !f!.evidence.includes(NO_EVIDENCE_TEXT)
 
     const evidenceRefs: EvidenceRef[] = hasEvidence
       ? [
           {
-            fileName: f.sourceFileName ?? documents[0]?.fileName ?? 'غير محدد',
-            page: f.sourcePage,
-            quote: f.evidence,
+            fileName: f!.sourceFileName ?? documents[0]?.fileName ?? 'غير محدد',
+            page: f!.sourcePage,
+            quote: f!.evidence,
           },
         ]
       : []
 
     return {
-      controlId: f.controlId,
-      controlText: control?.text ?? '',
-      levelId: control?.levelId ?? '',
-      levelTitle: control?.levelTitle ?? '',
-      domainId: control?.domainId ?? '',
-      domainTitle: control?.domainTitle ?? '',
-      sourcePage: control?.sourcePage ?? 0,
-      status: f.status,
-      priority: f.priority,
-      evidence: hasEvidence ? f.evidence : NO_EVIDENCE_TEXT,
+      controlId: control.controlId,
+      controlText: control.text,
+      levelId: control.levelId,
+      levelTitle: control.levelTitle,
+      domainId: control.domainId,
+      domainTitle: control.domainTitle,
+      sourcePage: control.sourcePage,
+      // A control the model skipped is an unevidenced control, so it counts
+      // against the score rather than silently shrinking the denominator.
+      status: f?.status ?? 'non_compliant',
+      priority: f?.priority ?? 'medium',
+      evidence: hasEvidence ? f!.evidence : NO_EVIDENCE_TEXT,
       evidenceRefs,
-      reasoning: f.reasoning,
-      confidence: clampScore(f.confidence),
-      recommendation: f.recommendation,
+      reasoning: f?.reasoning ?? 'لم يُصدر النموذج نتيجة لهذا الضابط، ولم يُعثر على دليل يدعمه في الوثائق المرفوعة.',
+      confidence: clampScore(f?.confidence ?? 0),
+      recommendation: f?.recommendation ?? '',
     }
   })
 
@@ -64,6 +75,9 @@ export async function runComplianceAnalysis({ frameworkId, documents }: RunAnaly
   const unsatisfiedCount = controlFindings.filter((f) => f.status === 'non_compliant').length
   const criticalCount = controlFindings.filter((f) => f.priority === 'critical').length
 
+  // Derived from the per-control verdicts against the full DGA control set —
+  // never the model's own self-reported complianceScore, which is a holistic
+  // impression that does not necessarily agree with its own findings.
   const computedScore =
     controlFindings.length > 0
       ? ((satisfiedCount + partiallySatisfiedCount * 0.5) / controlFindings.length) * 100
@@ -72,7 +86,7 @@ export async function runComplianceAnalysis({ frameworkId, documents }: RunAnaly
   return {
     generatedAt: new Date().toISOString(),
     modelVersion: GEMINI_MODEL,
-    complianceScore: clampScore(raw.complianceScore) || Math.round(computedScore),
+    complianceScore: Math.round(computedScore),
     confidenceScore: clampScore(raw.confidenceScore),
     satisfiedCount,
     partiallySatisfiedCount,
