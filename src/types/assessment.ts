@@ -121,4 +121,7 @@ export interface Assessment {
   auditTrail: AuditEntry[]
   finalizedAt?: string
   reportVersion: number
+  /** True when the analysis was produced by the demo simulation
+   * ("محاكاة التجربة") rather than a real Gemini run. Internal marker only. */
+  isSimulation?: boolean
 }

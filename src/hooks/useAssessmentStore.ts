@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from '@/services/storage/storageKeys'
 import { generateId } from '@/utils/id'
 import { CONSULTANT_ACTION_LABEL } from '@/utils/status'
 import { SEED_DEMO_ASSESSMENTS, buildMockAssessment, buildPendingReviewAssessment } from '@/data/mockAssessment'
+import { buildSimulatedAnalysis } from '@/data/simulationAssessment'
 
 const ACTOR_LABEL: Record<Role, string> = {
   client: 'العميل',
@@ -32,6 +33,8 @@ interface AssessmentState {
 
   setStatus: (assessmentId: string, status: AssessmentStatus, actor: Role, decisionLabel: string, notes?: string) => void
   setAnalysis: (assessmentId: string, analysis: AnalysisResult) => void
+  /** Demo only: fills in a simulated analysis locally, with no Gemini call. */
+  runSimulation: (assessmentId: string) => void
 
   applyControlDecision: (
     assessmentId: string,
@@ -153,6 +156,33 @@ export const useAssessmentStore = create<AssessmentState>()(
                 })
               : a,
           ),
+        })),
+
+      // Demo only. Writes a locally-built analysis straight to the store and
+      // flags the assessment as a simulation. Deliberately separate from
+      // setAnalysis so the real pipeline is untouched and simulated runs are
+      // distinguishable in the audit trail.
+      runSimulation: (assessmentId) =>
+        set((state) => ({
+          assessments: state.assessments.map((a) => {
+            if (a.id !== assessmentId) return a
+            const analysis = buildSimulatedAnalysis(a.frameworkId)
+            return touch({
+              ...a,
+              isSimulation: true,
+              analysis,
+              status: 'analyzed',
+              auditTrail: [
+                ...a.auditTrail,
+                makeAuditEntry({
+                  actor: 'client',
+                  actorLabel: ACTOR_LABEL.client,
+                  decision: 'محاكاة التجربة (بيانات تجريبية)',
+                  notes: `تم توليد تقييم تجريبي كامل داخل المتصفح دون رفع أي وثيقة ودون استدعاء الذكاء الاصطناعي. نسبة الامتثال المحاكاة: ${analysis.complianceScore}٪.`,
+                }),
+              ],
+            })
+          }),
         })),
 
       applyControlDecision: (assessmentId, controlId, action, notes, overriddenStatus, decidedBy = 'المستشار') =>
