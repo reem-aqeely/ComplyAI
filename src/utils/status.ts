@@ -59,6 +59,11 @@ export const ASSESSMENT_STATUS_BADGE: Record<AssessmentStatus, NonNullable<Badge
  * neither the client nor the consultant has any other way to move an escalated
  * assessment forward, so leaving them out strands it permanently. */
 const CONSULTANT_REVIEWABLE_STATUSES: AssessmentStatus[] = [
+  // `analyzed` is included because it is where an assessment lands as soon as
+  // the analysis finishes, and there is no longer a hand-off step after it —
+  // so review has to be possible from that state or the action bar would never
+  // appear at all.
+  'analyzed',
   'submitted_to_consultant',
   'under_review',
   'needs_info',

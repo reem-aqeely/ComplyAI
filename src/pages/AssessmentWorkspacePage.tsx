@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { ArrowRight, Send } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useAssessmentStore } from '@/hooks/useAssessmentStore'
 import { useRoleStore } from '@/hooks/useRoleStore'
 import { WorkflowTimeline } from '@/features/shared/WorkflowTimeline'
@@ -17,7 +17,6 @@ import { ReportDocument } from '@/features/reports/ReportDocument'
 import { ConsultantActionsBar } from '@/features/consultant/ConsultantActionsBar'
 import { AuditTrailTable } from '@/features/audit/AuditTrailTable'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ASSESSMENT_STATUS_BADGE, ASSESSMENT_STATUS_LABEL, isConsultantReviewable } from '@/utils/status'
 import type { ControlFinding } from '@/types/assessment'
@@ -25,7 +24,6 @@ import type { ControlFinding } from '@/types/assessment'
 export function AssessmentWorkspacePage() {
   const { assessmentId } = useParams<{ assessmentId: string }>()
   const assessment = useAssessmentStore((s) => s.assessments.find((a) => a.id === assessmentId))
-  const submitToConsultant = useAssessmentStore((s) => s.submitToConsultant)
   const role = useRoleStore((s) => s.role)
 
   const [tab, setTab] = useState<string>('upload')
@@ -50,7 +48,6 @@ export function AssessmentWorkspacePage() {
   // A single role now carries the review capabilities, so control-level review
   // is gated on the assessment status alone rather than on the role.
   const canReviewControls = isConsultantReviewable(assessment.status)
-  const canSubmit = role === 'client' && assessment.status === 'analyzed'
   const canRevise = assessment.status === 'needs_info' || assessment.status === 'rejected'
 
   return (
@@ -86,12 +83,6 @@ export function AssessmentWorkspacePage() {
               </div>
             </dl>
           </div>
-          {canSubmit && (
-            <Button variant="gold" onClick={() => submitToConsultant(assessment.id)} className="shrink-0">
-              <Send className="h-4 w-4" />
-              إرسال للمستشار
-            </Button>
-          )}
         </div>
         <WorkflowTimeline status={assessment.status} />
       </div>
