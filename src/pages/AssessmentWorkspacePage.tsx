@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAssessmentStore } from '@/hooks/useAssessmentStore'
@@ -26,12 +26,23 @@ export function AssessmentWorkspacePage() {
   const assessment = useAssessmentStore((s) => s.assessments.find((a) => a.id === assessmentId))
   const role = useRoleStore((s) => s.role)
 
-  const [tab, setTab] = useState<string>('upload')
+  // Workflow step 3 (مراجعة النتائج) follows step 2 directly, so an assessment
+  // that already has results opens on them rather than on the upload step.
+  const [tab, setTab] = useState<string>(() => (assessment?.analysis ? 'overview' : 'upload'))
   const [selectedFinding, setSelectedFinding] = useState<ControlFinding | null>(null)
   const [autoOpenUpload, setAutoOpenUpload] = useState(false)
 
   const hasAnalysis = Boolean(assessment?.analysis)
   const activeTab = useMemo(() => (hasAnalysis ? tab : 'upload'), [hasAnalysis, tab])
+
+  // Same hand-off when the analysis finishes during this session. Guarded per
+  // assessment so it advances once and never overrides later manual navigation.
+  const advancedForRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!hasAnalysis || !assessmentId || advancedForRef.current === assessmentId) return
+    advancedForRef.current = assessmentId
+    setTab((current) => (current === 'upload' ? 'overview' : current))
+  }, [hasAnalysis, assessmentId])
 
   if (!assessmentId) return <Navigate to="/assessments" replace />
   if (!assessment) {

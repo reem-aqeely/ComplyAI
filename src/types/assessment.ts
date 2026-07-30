@@ -90,7 +90,6 @@ export type AssessmentStatus =
   | 'draft'
   | 'analyzing'
   | 'analyzed'
-  | 'submitted_to_consultant'
   | 'under_review'
   | 'needs_info'
   | 'approved'
@@ -120,7 +119,6 @@ export interface Assessment {
   files: UploadedFileRecord[]
   analysis?: AnalysisResult
   auditTrail: AuditEntry[]
-  submittedAt?: string
   finalizedAt?: string
   reportVersion: number
 }

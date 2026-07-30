@@ -1,14 +1,13 @@
 import { Fragment } from 'react'
-import { Check, FileUp, GitPullRequestArrow, ScanSearch, Send, Stamp } from 'lucide-react'
+import { Check, FileUp, GitPullRequestArrow, ScanSearch, Stamp } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import type { AssessmentStatus } from '@/types/assessment'
 
 const STEPS = [
   { key: 'upload', label: 'رفع الملفات', icon: FileUp },
   { key: 'analysis', label: 'تحليل الذكاء الاصطناعي', icon: ScanSearch },
-  { key: 'submit', label: 'إرسال للمستشار', icon: Send },
-  { key: 'review', label: 'مراجعة المستشار', icon: GitPullRequestArrow },
-  { key: 'decision', label: 'اعتماد / تعديل / رفض', icon: Stamp },
+  { key: 'review', label: 'مراجعة النتائج', icon: GitPullRequestArrow },
+  { key: 'decision', label: 'اتخاذ القرار', icon: Stamp },
   { key: 'report', label: 'التقرير النهائي', icon: Check },
 ] as const
 
@@ -18,19 +17,19 @@ function stepIndexForStatus(status: AssessmentStatus): number {
       return 0
     case 'analyzing':
       return 1
+    // Results exist and are being reviewed — `under_review` is the same step,
+    // it just means control-level review has started.
     case 'analyzed':
-      return 2
-    case 'submitted_to_consultant':
-      return 2
     case 'under_review':
+      return 2
+    // A decision has been taken on the assessment as a whole.
     case 'needs_info':
-      return 3
     case 'approved':
     case 'rejected':
     case 'escalated':
-      return 4
+      return 3
     case 'finalized':
-      return 5
+      return 4
     default:
       return 0
   }

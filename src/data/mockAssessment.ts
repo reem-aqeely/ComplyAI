@@ -352,7 +352,7 @@ const MOCK_AUDIT_TRAIL: AuditEntry[] = [
     decision: 'اكتمال تحليل الذكاء الاصطناعي',
     notes: 'نسبة الامتثال المقدَّرة: 62٪',
   },
-  { id: 'mock_audit_4', timestamp: at(3), actor: 'client', actorLabel: 'العميل', decision: 'إرسال للمستشار' },
+  { id: 'mock_audit_4', timestamp: at(3), actor: 'client', actorLabel: 'العميل', decision: 'بدء مراجعة النتائج' },
   { id: 'mock_audit_5', timestamp: at(28), actor: 'consultant', actorLabel: 'المستشار', decision: 'اعتماد', controlId: '5-108-01', notes: 'تم التحقق من قرار التشكيل ومحاضر الاجتماعات — الضابط مستوفى بالكامل.' },
   { id: 'mock_audit_6', timestamp: at(28), actor: 'consultant', actorLabel: 'المستشار', decision: 'اعتماد', controlId: '5-108-09', notes: 'التوصيف موثق ومعتمد رسمياً، لا حاجة لإجراء إضافي حالياً.' },
   { id: 'mock_audit_7', timestamp: at(29), actor: 'consultant', actorLabel: 'المستشار', decision: 'اعتماد', controlId: '5-108-10', notes: 'أوافق على التصنيف الجزئي، ويُطلب استكمال آلية المتابعة الدورية خلال الربع القادم.' },
@@ -388,7 +388,6 @@ export function buildMockAssessment(): Assessment {
     files: [{ ...MOCK_FILE_RECORD }],
     analysis: buildMockAnalysisResult(),
     auditTrail: MOCK_AUDIT_TRAIL.map((entry) => ({ ...entry })),
-    submittedAt: at(3),
     finalizedAt: at(32),
     reportVersion: 1,
   }
@@ -401,8 +400,8 @@ export function buildMockAnalysisResult(): AnalysisResult {
 }
 
 /**
- * Second demo assessment, sitting in `submitted_to_consultant` — i.e. actually
- * awaiting review. The finalized assessment above is a finished record with no
+ * Second demo assessment, sitting in `analyzed` — i.e. results are ready and
+ * actually awaiting review. The finalized assessment above is a finished record with no
  * remaining actions, so without this one the consultant queue has nothing to
  * work on. Consultant decisions are stripped from the findings and the audit
  * trail is cut at the client's submission, so the review starts clean.
@@ -417,7 +416,7 @@ export function buildPendingReviewAssessment(): Assessment {
     organizationName: PENDING_ORGANIZATION_NAME,
     createdAt: at(36),
     updatedAt: at(39),
-    status: 'submitted_to_consultant',
+    status: 'analyzed',
     files: [{ ...MOCK_FILE_RECORD, id: 'mock_file_pending', uploadedAt: at(36) }],
     analysis: {
       ...analysis,
@@ -442,9 +441,7 @@ export function buildPendingReviewAssessment(): Assessment {
         decision: 'اكتمال تحليل الذكاء الاصطناعي',
         notes: `نسبة الامتثال المقدَّرة: ${analysis.complianceScore}٪`,
       },
-      { id: 'mock_pending_audit_4', timestamp: at(39), actor: 'client', actorLabel: 'العميل', decision: 'إرسال للمستشار' },
     ],
-    submittedAt: at(39),
     reportVersion: 0,
   }
 }

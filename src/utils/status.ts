@@ -32,7 +32,6 @@ export const ASSESSMENT_STATUS_LABEL: Record<AssessmentStatus, string> = {
   draft: 'مسودة',
   analyzing: 'جاري التحليل',
   analyzed: 'تم التحليل',
-  submitted_to_consultant: 'بانتظار مراجعة المستشار',
   under_review: 'قيد المراجعة',
   needs_info: 'بانتظار معلومات إضافية',
   approved: 'معتمد',
@@ -45,7 +44,6 @@ export const ASSESSMENT_STATUS_BADGE: Record<AssessmentStatus, NonNullable<Badge
   draft: 'outline',
   analyzing: 'info',
   analyzed: 'info',
-  submitted_to_consultant: 'warning',
   under_review: 'info',
   needs_info: 'warning',
   approved: 'success',
@@ -64,7 +62,6 @@ const CONSULTANT_REVIEWABLE_STATUSES: AssessmentStatus[] = [
   // so review has to be possible from that state or the action bar would never
   // appear at all.
   'analyzed',
-  'submitted_to_consultant',
   'under_review',
   'needs_info',
   'escalated',

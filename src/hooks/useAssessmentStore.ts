@@ -33,8 +33,6 @@ interface AssessmentState {
   setStatus: (assessmentId: string, status: AssessmentStatus, actor: Role, decisionLabel: string, notes?: string) => void
   setAnalysis: (assessmentId: string, analysis: AnalysisResult) => void
 
-  submitToConsultant: (assessmentId: string) => void
-
   applyControlDecision: (
     assessmentId: string,
     controlId: string,
@@ -157,15 +155,6 @@ export const useAssessmentStore = create<AssessmentState>()(
           ),
         })),
 
-      submitToConsultant: (assessmentId) => {
-        get().setStatus(assessmentId, 'submitted_to_consultant', 'client', 'إرسال للمستشار')
-        set((state) => ({
-          assessments: state.assessments.map((a) =>
-            a.id === assessmentId ? { ...a, submittedAt: new Date().toISOString() } : a,
-          ),
-        }))
-      },
-
       applyControlDecision: (assessmentId, controlId, action, notes, overriddenStatus, decidedBy = 'المستشار') =>
         set((state) => ({
           assessments: state.assessments.map((a) => {
@@ -237,7 +226,25 @@ export const useAssessmentStore = create<AssessmentState>()(
           ),
         })),
     }),
-    { name: STORAGE_KEYS.assessments },
+    {
+      name: STORAGE_KEYS.assessments,
+      // The 'submitted_to_consultant' hand-off step was removed from the
+      // workflow. Records persisted with it are mapped onto 'analyzed' (results
+      // ready for review), which is the equivalent step in the current flow —
+      // otherwise their status badge and timeline position would resolve to
+      // undefined and render blank.
+      version: 1,
+      migrate: (persisted) => {
+        const state = persisted as { assessments?: Assessment[] } | undefined
+        if (!state?.assessments) return state as AssessmentState
+        return {
+          ...state,
+          assessments: state.assessments.map((a) =>
+            (a.status as string) === 'submitted_to_consultant' ? { ...a, status: 'analyzed' } : a,
+          ),
+        } as AssessmentState
+      },
+    },
   ),
 )
 
