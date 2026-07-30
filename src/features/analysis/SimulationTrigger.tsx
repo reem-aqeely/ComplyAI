@@ -16,8 +16,7 @@ export function SimulationTrigger({ assessment }: { assessment: Assessment }) {
       <div className="text-start">
         <p className="font-semibold text-[var(--color-primary)]">محاكاة التجربة</p>
         <p className="mt-1 max-w-xl text-sm text-[var(--color-muted-foreground)]">
-          لأغراض العرض فقط: استعرض تجربة التقييم كاملة ببيانات تجريبية واقعية دون رفع أي وثيقة ودون استدعاء الذكاء
-          الاصطناعي.
+          لأغراض العرض فقط: استعرض تجربة التقييم كاملة ببيانات تجريبية واقعية دون رفع أي وثيقة.
         </p>
       </div>
       <Button variant="outline" onClick={() => runSimulation(assessment.id)} className="shrink-0">
