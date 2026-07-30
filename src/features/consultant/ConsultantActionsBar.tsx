@@ -11,7 +11,7 @@ type DialogAction = 'request_info' | 'escalate' | 'approve' | 'reject' | null
 
 const DIALOG_META: Record<Exclude<DialogAction, null>, { title: string; description: string; confirmLabel: string }> = {
   request_info: {
-    title: 'طلب معلومات إضافية من العميل',
+    title: 'التواصل مع العميل',
     description: 'وضّح المعلومات أو المستندات الناقصة المطلوبة لإكمال المراجعة.',
     confirmLabel: 'إرسال الطلب',
   },
@@ -66,7 +66,7 @@ export function ConsultantActionsBar({ assessment }: { assessment: Assessment })
         <>
           <Button variant="outline" size="sm" onClick={() => setDialogAction('request_info')}>
             <MessageSquareWarning className="h-4 w-4" />
-            طلب معلومات إضافية
+            التواصل مع العميل
           </Button>
           <Button variant="subtle" size="sm" onClick={() => setDialogAction('escalate')}>
             <AlertTriangle className="h-4 w-4" />

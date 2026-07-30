@@ -47,7 +47,9 @@ export function AssessmentWorkspacePage() {
     )
   }
 
-  const canReviewControls = role === 'consultant' && isConsultantReviewable(assessment.status)
+  // A single role now carries the review capabilities, so control-level review
+  // is gated on the assessment status alone rather than on the role.
+  const canReviewControls = isConsultantReviewable(assessment.status)
   const canSubmit = role === 'client' && assessment.status === 'analyzed'
   const canRevise = assessment.status === 'needs_info' || assessment.status === 'rejected'
 
@@ -104,7 +106,7 @@ export function AssessmentWorkspacePage() {
         />
       )}
 
-      {role === 'consultant' && <ConsultantActionsBar assessment={assessment} />}
+      <ConsultantActionsBar assessment={assessment} />
 
       <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList className="flex-wrap">

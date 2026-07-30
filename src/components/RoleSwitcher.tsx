@@ -8,14 +8,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/utils/cn'
 
+/** Both keys are kept so a `consultant` value persisted by an earlier build
+ * still resolves to a label, but only SELECTABLE_ROLES appear in the menu. */
 const ROLE_META = {
   client: { label: 'العميل', icon: User },
   consultant: { label: 'المستشار', icon: Briefcase },
 } as const
 
+/** The separate consultant entry was removed — the client role now carries the
+ * review capabilities, so there is a single entry point. */
+const SELECTABLE_ROLES = ['client'] as const satisfies ReadonlyArray<keyof typeof ROLE_META>
+
 export function RoleSwitcher() {
   const { role, setRole } = useRoleStore()
-  const Meta = ROLE_META[role]
+  const Meta = ROLE_META[role] ?? ROLE_META.client
   const Icon = Meta.icon
 
   return (
@@ -31,7 +37,7 @@ export function RoleSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
-        {(Object.keys(ROLE_META) as Array<keyof typeof ROLE_META>).map((key) => {
+        {SELECTABLE_ROLES.map((key) => {
           const ItemIcon = ROLE_META[key].icon
           return (
             <DropdownMenuItem
