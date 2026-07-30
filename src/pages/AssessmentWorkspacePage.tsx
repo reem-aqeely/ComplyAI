@@ -33,7 +33,19 @@ export function AssessmentWorkspacePage() {
   const [autoOpenUpload, setAutoOpenUpload] = useState(false)
 
   const hasAnalysis = Boolean(assessment?.analysis)
-  const activeTab = useMemo(() => (hasAnalysis ? tab : 'upload'), [hasAnalysis, tab])
+
+  // Whether step 4 has anything to offer: a reviewable assessment exposes the
+  // four decisions, an approved one exposes issuing the final report.
+  const status = assessment?.status
+  const canDecide = Boolean(status && (isConsultantReviewable(status) || status === 'approved'))
+
+  const activeTab = useMemo(() => {
+    if (!hasAnalysis) return 'upload'
+    // The decision tab disappears once the assessment is finalized, so land on
+    // the report instead of leaving an empty panel selected.
+    if (tab === 'decision' && !canDecide) return 'report'
+    return tab
+  }, [hasAnalysis, tab, canDecide])
 
   // Same hand-off when the analysis finishes during this session. Guarded per
   // assessment so it advances once and never overrides later manual navigation.
@@ -108,8 +120,6 @@ export function AssessmentWorkspacePage() {
         />
       )}
 
-      <ConsultantActionsBar assessment={assessment} />
-
       <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="upload">رفع الملفات</TabsTrigger>
@@ -117,6 +127,7 @@ export function AssessmentWorkspacePage() {
           {hasAnalysis && <TabsTrigger value="controls">الضوابط</TabsTrigger>}
           {hasAnalysis && <TabsTrigger value="recommendations">التوصيات</TabsTrigger>}
           {hasAnalysis && <TabsTrigger value="action-plan">خطة العمل</TabsTrigger>}
+          {canDecide && <TabsTrigger value="decision">اتخاذ القرار</TabsTrigger>}
           {hasAnalysis && <TabsTrigger value="report">التقرير</TabsTrigger>}
           <TabsTrigger value="audit">سجل التدقيق</TabsTrigger>
         </TabsList>
@@ -145,6 +156,11 @@ export function AssessmentWorkspacePage() {
             </TabsContent>
             <TabsContent value="action-plan">
               <ActionPlanTable items={assessment.analysis.actionPlan} />
+            </TabsContent>
+            {/* Workflow step 4 — the only place the assessment-level decisions
+                live, so the review tabs above stay read-only. */}
+            <TabsContent value="decision">
+              <ConsultantActionsBar assessment={assessment} />
             </TabsContent>
             <TabsContent value="report" className="flex flex-col items-start gap-4">
               <p className="text-sm text-[var(--color-muted-foreground)]">
