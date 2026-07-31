@@ -127,9 +127,13 @@ export function AssessmentWorkspacePage() {
 
         <TabsContent value="upload" className="flex flex-col gap-6">
           {role === 'client' && (!hasAnalysis || canRevise) && <SimulationTrigger assessment={assessment} />}
+          {/* Upload is intentionally inert: the drop zone stays visible but is
+              always disabled, so clicking, dragging and the file picker all do
+              nothing. Restore the previous expression to re-enable it:
+              disabled={role !== 'client' || (hasAnalysis && !canRevise)} */}
           <FileUploader
             assessmentId={assessment.id}
-            disabled={role !== 'client' || (hasAnalysis && !canRevise)}
+            disabled
             autoOpen={autoOpenUpload}
             onAutoOpenHandled={() => setAutoOpenUpload(false)}
           />
